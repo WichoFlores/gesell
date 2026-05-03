@@ -3,12 +3,15 @@ import type { JSONContent } from "@tiptap/core";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { buildMarkExtension } from "./buildMarkExtension";
+import { buildCursorModeExtension } from "./cursorModeExtension";
 import { HeadingNav } from "./headings";
 import { debounce } from "@/lib/debounce";
 import { saveSessionDoc } from "@/db/sessions";
 import { useUI } from "@/store/ui";
 import { useMarkDefs } from "@/store/marks";
 import { useEditorBus } from "@/store/editorBus";
+import { useCursorMode } from "@/store/cursorMode";
+import { CursorModeBubble } from "@/components/CursorModeBubble";
 
 const SAVE_DEBOUNCE_MS = 750;
 
@@ -49,6 +52,11 @@ export function Editor({ sessionId, initialDoc }: Props) {
         StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
         HeadingNav,
         ...markDefs.map((d) => buildMarkExtension(d, markDefs)),
+        buildCursorModeExtension({
+          getMode: () => useCursorMode.getState().modeId,
+          getAnchorBlock: () => useCursorMode.getState().anchorBlock,
+          clearMode: () => useCursorMode.getState().setMode(null),
+        }),
       ],
       content: initialDoc,
       autofocus: "end",
@@ -84,7 +92,27 @@ export function Editor({ sessionId, initialDoc }: Props) {
     return () => setEditorBus(null);
   }, [editor, setEditorBus]);
 
+  useEffect(() => {
+    if (!editor) return;
+    const dom = editor.view.dom;
+    const unsubscribe = useCursorMode.subscribe((state) => {
+      if (state.modeId) dom.setAttribute("data-cursor-mode", state.modeId);
+      else dom.removeAttribute("data-cursor-mode");
+    });
+    const initial = useCursorMode.getState().modeId;
+    if (initial) dom.setAttribute("data-cursor-mode", initial);
+    return () => {
+      unsubscribe();
+      dom.removeAttribute("data-cursor-mode");
+    };
+  }, [editor]);
+
   if (markDefs.length === 0) return null;
 
-  return <EditorContent editor={editor} />;
+  return (
+    <div className="relative">
+      <EditorContent editor={editor} />
+      <CursorModeBubble />
+    </div>
+  );
 }

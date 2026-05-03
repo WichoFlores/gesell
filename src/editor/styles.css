@@ -140,3 +140,18 @@
   border-radius: 2px;
   padding: 0 0.1em;
 }
+
+/* Caret color while a cursor mode is active. The data attribute is set on
+   the editor DOM by Editor.tsx; the value is the mark id. */
+.tn-prose[data-cursor-mode="quote"] {
+  caret-color: var(--mark-quote-color);
+}
+.tn-prose[data-cursor-mode="wondering"] {
+  caret-color: var(--mark-wondering-color);
+}
+.tn-prose[data-cursor-mode="comfort"] {
+  caret-color: var(--mark-comfort-color);
+}
+.tn-prose[data-cursor-mode="discomfort"] {
+  caret-color: var(--mark-discomfort-color);
+}
