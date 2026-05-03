@@ -1,0 +1,47 @@
+import type { MarkDefinition } from "./types";
+
+export const DEFAULT_MARK_DEFINITIONS: MarkDefinition[] = [
+  {
+    id: "quote",
+    name: "Quote",
+    kind: "inline",
+    color: "#38bdf8",
+    style: "serif-quote",
+    cssClass: "tn-mark-quote",
+    shortcut: "Mod-Shift-'",
+    inputRule: { open: '"', close: '"' },
+    builtin: true,
+  },
+  {
+    id: "wondering",
+    name: "Wondering",
+    kind: "sentence",
+    color: "#c084fc",
+    style: "underline-dotted",
+    cssClass: "tn-mark-wondering",
+    shortcut: "Mod-Alt-w",
+    builtin: true,
+  },
+  {
+    id: "comfort",
+    name: "Comfort",
+    kind: "inline",
+    color: "#34d399",
+    style: "highlight",
+    cssClass: "tn-mark-comfort",
+    shortcut: "Mod-Alt-c",
+    exclusiveGroup: "affect",
+    builtin: true,
+  },
+  {
+    id: "discomfort",
+    name: "Discomfort",
+    kind: "inline",
+    color: "#fbbf24",
+    style: "highlight",
+    cssClass: "tn-mark-discomfort",
+    shortcut: "Mod-Alt-d",
+    exclusiveGroup: "affect",
+    builtin: true,
+  },
+];

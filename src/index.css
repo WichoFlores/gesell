@@ -1,0 +1,89 @@
+@import "tailwindcss";
+@import "./editor/styles.css";
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+@theme {
+  --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+
+  --color-bg: #fafaf9;
+  --color-fg: #1c1917;
+  --color-muted: #78716c;
+  --color-subtle: #e7e5e4;
+  --color-panel: #ffffff;
+  --color-border: #e7e5e4;
+  --color-accent: #6366f1;
+
+  --color-mark-quote: #0ea5e9;
+  --color-mark-wondering: #a855f7;
+  --color-mark-comfort: #10b981;
+  --color-mark-discomfort: #f59e0b;
+}
+
+[data-theme="dark"] {
+  --color-bg: #0c0a09;
+  --color-fg: #f5f5f4;
+  --color-muted: #a8a29e;
+  --color-subtle: #292524;
+  --color-panel: #1c1917;
+  --color-border: #292524;
+  --color-accent: #818cf8;
+
+  --color-mark-quote: #38bdf8;
+  --color-mark-wondering: #c084fc;
+  --color-mark-comfort: #34d399;
+  --color-mark-discomfort: #fbbf24;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+html {
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  margin: 0;
+  line-height: 1.7;
+}
+
+@media print {
+  /* Force light palette for paper */
+  :root,
+  [data-theme="dark"] {
+    --color-bg: #ffffff !important;
+    --color-fg: #111111 !important;
+    --color-muted: #555555 !important;
+    --color-subtle: transparent !important;
+    --color-panel: #ffffff !important;
+    --color-border: #cccccc !important;
+  }
+  /* Hide app chrome */
+  aside,
+  header,
+  .fixed {
+    display: none !important;
+  }
+  main {
+    display: block !important;
+    overflow: visible !important;
+  }
+  .tn-prose {
+    min-height: 0 !important;
+    max-width: none !important;
+    color: #111 !important;
+  }
+  /* Page setup */
+  @page {
+    margin: 1.6cm;
+  }
+}
