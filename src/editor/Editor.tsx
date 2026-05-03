@@ -55,6 +55,7 @@ export function Editor({ sessionId, initialDoc }: Props) {
         buildCursorModeExtension({
           getMode: () => useCursorMode.getState().modeId,
           getAnchorBlock: () => useCursorMode.getState().anchorBlock,
+          getActivationPos: () => useCursorMode.getState().activationPos,
           clearMode: () => useCursorMode.getState().setMode(null),
         }),
       ],

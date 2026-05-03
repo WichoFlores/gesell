@@ -5,6 +5,8 @@ import { deleteFamilyMember, updateFamilyMember } from "@/db/family";
 import { debounce } from "@/lib/debounce";
 import { useUI } from "@/store/ui";
 import { cn } from "@/lib/utils";
+import { RELATIONSHIPS, type Gender, type Relationship } from "@/lib/relationships";
+import { GenderToggle } from "./GenderToggle";
 
 const SUGGESTED_FLAGS = [
   "deceased",
@@ -18,6 +20,7 @@ export function PersonCard({ id }: { id: string }) {
   const openFamilyDetail = useUI((s) => s.openFamilyDetail);
 
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const nameRef = useRef<HTMLInputElement>(null);
   const pendingRef = useRef<Record<string, unknown>>({});
   const flushPending = useMemo(
     () =>
@@ -35,6 +38,12 @@ export function PersonCard({ id }: { id: string }) {
     flushPending();
   }
   useEffect(() => () => flushPending.flush(), [flushPending]);
+
+  useEffect(() => {
+    if (!member) return;
+    nameRef.current?.focus();
+    nameRef.current?.select();
+  }, [member?.id]);
 
   if (!member) return null;
 
@@ -87,6 +96,7 @@ export function PersonCard({ id }: { id: string }) {
       <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
         <Field label="Name">
           <input
+            ref={nameRef}
             type="text"
             defaultValue={member.name}
             onChange={(e) => persist({ name: e.target.value })}
@@ -95,27 +105,30 @@ export function PersonCard({ id }: { id: string }) {
         </Field>
 
         <Field label="Relationship">
-          <input
-            type="text"
-            list="relationship-suggestions"
-            defaultValue={member.relationship}
-            placeholder="mother, father, sibling…"
-            onChange={(e) => persist({ relationship: e.target.value })}
+          <select
+            value={member.relationship}
+            onChange={(e) =>
+              void updateFamilyMember(id, {
+                relationship: e.target.value as Relationship,
+              })
+            }
             className="w-full rounded border border-[color:var(--color-border)] bg-transparent px-2 py-1.5 text-sm outline-none focus:border-[color:var(--color-accent)]"
-          />
-          <datalist id="relationship-suggestions">
-            {[
-              "mother",
-              "father",
-              "sibling",
-              "partner",
-              "child",
-              "friend",
-              "grandparent",
-            ].map((r) => (
-              <option key={r} value={r} />
+          >
+            {RELATIONSHIPS.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.label}
+              </option>
             ))}
-          </datalist>
+          </select>
+        </Field>
+
+        <Field label="Gender">
+          <GenderToggle
+            value={member.gender}
+            onChange={(g: Gender | undefined) =>
+              void updateFamilyMember(id, { gender: g })
+            }
+          />
         </Field>
 
         <Field label="Age">

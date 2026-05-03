@@ -87,7 +87,8 @@ export function CursorModeBubble() {
 
         const $from = editor.state.selection.$from;
         const anchorBlock = $from.before($from.depth);
-        setMode(def.id, anchorBlock);
+        const activationPos = editor.state.selection.from;
+        setMode(def.id, anchorBlock, activationPos);
 
         const markType = editor.state.schema.marks[def.id];
         if (markType) {

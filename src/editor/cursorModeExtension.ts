@@ -1,11 +1,14 @@
-import { Extension } from "@tiptap/core";
-import { Plugin, PluginKey } from "@tiptap/pm/state";
+import { Extension, type Editor } from "@tiptap/core";
+import { Plugin, PluginKey, TextSelection } from "@tiptap/pm/state";
 
 type Options = {
   getMode: () => string | null;
   getAnchorBlock: () => number | null;
+  getActivationPos: () => number | null;
   clearMode: () => void;
 };
+
+const QUOTE_CHAR = '"';
 
 export const cursorModePluginKey = new PluginKey("cursorMode");
 
@@ -40,11 +43,23 @@ export function buildCursorModeExtension(options: Options) {
       const editorRef = () => this.editor;
       return {
         Enter: () => {
-          if (options.getMode()) {
+          const modeId = options.getMode();
+          if (!modeId) return false;
+          const ed = editorRef();
+
+          if (modeId === "quote") {
+            const wrapped = wrapQuoteOnExit(ed, options.getActivationPos());
             options.clearMode();
-            const ed = editorRef();
+            if (wrapped) {
+              ed.commands.splitBlock();
+              return true;
+            }
             ed.view.dispatch(ed.state.tr.setStoredMarks(null));
+            return false;
           }
+
+          options.clearMode();
+          ed.view.dispatch(ed.state.tr.setStoredMarks(null));
           return false;
         },
       };
@@ -62,4 +77,32 @@ export function buildCursorModeExtension(options: Options) {
       if (currentBlockBefore !== anchor) options.clearMode();
     },
   });
+}
+
+function wrapQuoteOnExit(
+  editor: Editor,
+  activationPos: number | null,
+): boolean {
+  if (activationPos == null) return false;
+  const markType = editor.state.schema.marks.quote;
+  if (!markType) return false;
+
+  const start = activationPos;
+  const end = editor.state.selection.from;
+  if (end <= start) return false;
+
+  // Activation and cursor must be in the same block for the wrap to make
+  // sense. If the user navigated away, abort.
+  const $start = editor.state.doc.resolve(start);
+  const $end = editor.state.doc.resolve(end);
+  if ($start.before($start.depth) !== $end.before($end.depth)) return false;
+
+  const tr = editor.state.tr;
+  tr.insertText(QUOTE_CHAR, start);
+  tr.insertText(QUOTE_CHAR, end + 1);
+  tr.addMark(start, end + 2, markType.create());
+  tr.setStoredMarks(null);
+  tr.setSelection(TextSelection.create(tr.doc, end + 2));
+  editor.view.dispatch(tr);
+  return true;
 }

@@ -6,6 +6,7 @@ import { initials } from "@/lib/age";
 import { useUI } from "@/store/ui";
 import { useEditorSelectionRestore } from "@/lib/useEditorSelectionRestore";
 import { cn } from "@/lib/utils";
+import { relationshipLabel } from "@/lib/relationships";
 import { PersonCard } from "./PersonCard";
 
 export function FamilyPanel() {
@@ -54,18 +55,43 @@ export function FamilyPanel() {
         e.preventDefault();
         if (detailId) openDetail(null);
         else close();
+        return;
       }
       if (detailId) return;
-      if (e.key === "n" && !e.metaKey && !e.ctrlKey) {
-        const target = e.target as HTMLElement | null;
-        if (target?.tagName === "INPUT" || target?.tagName === "TEXTAREA") return;
+      const target = e.target as HTMLElement | null;
+      const isField =
+        target?.tagName === "INPUT" || target?.tagName === "TEXTAREA";
+      if (e.key === "n" && !e.metaKey && !e.ctrlKey && !isField) {
         e.preventDefault();
         void handleAdd();
+        return;
+      }
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        if (isField) return;
+        const buttons = listRef.current?.querySelectorAll<HTMLButtonElement>(
+          "li > button",
+        );
+        if (!buttons || buttons.length === 0) return;
+        e.preventDefault();
+        const arr = Array.from(buttons);
+        const currentIndex = arr.indexOf(
+          document.activeElement as HTMLButtonElement,
+        );
+        let next: number;
+        if (currentIndex === -1) {
+          next = e.key === "ArrowDown" ? 0 : arr.length - 1;
+        } else {
+          next =
+            e.key === "ArrowDown"
+              ? (currentIndex + 1) % arr.length
+              : (currentIndex - 1 + arr.length) % arr.length;
+        }
+        arr[next]?.focus();
       }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  });
+  }, [open, detailId, close, openDetail, activePatientId]);
 
   async function handleAdd() {
     if (!activePatientId) return;
@@ -101,7 +127,7 @@ export function FamilyPanel() {
       </header>
 
       {detailId ? (
-        <PersonCard id={detailId} />
+        <PersonCard key={detailId} id={detailId} />
       ) : (
         <>
           <div className="flex items-center justify-between border-b border-[color:var(--color-border)] px-3 py-2">
@@ -148,9 +174,9 @@ export function FamilyPanel() {
                       <span className="block truncate text-sm">
                         {m.name}
                       </span>
-                      {m.relationship ? (
+                      {m.relationship && m.relationship !== "other" ? (
                         <span className="block truncate text-xs text-[color:var(--color-muted)]">
-                          {m.relationship}
+                          {relationshipLabel(m.relationship)}
                         </span>
                       ) : null}
                     </span>

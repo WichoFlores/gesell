@@ -133,7 +133,7 @@ export default function App() {
               <ThemeToggle />
             </header>
             <div className="flex-1 overflow-y-auto">
-              <div className="mx-auto max-w-[720px] px-8 py-12">
+              <div className="px-6 py-12">
                 {booted && session ? (
                   <Editor
                     key={session.id}

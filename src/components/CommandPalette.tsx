@@ -13,6 +13,7 @@ import { ConfirmDialog } from "./ConfirmDialog";
 import { useUI } from "@/store/ui";
 import { timeLabel } from "@/lib/date";
 import { initials } from "@/lib/age";
+import { relationshipLabel } from "@/lib/relationships";
 
 type Props = {
   open: boolean;
@@ -224,24 +225,27 @@ export function CommandPalette({ open, onClose }: Props) {
                 heading="Family"
                 className="px-1 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1 [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-[color:var(--color-muted)] [&_[cmdk-group-heading]]:uppercase"
               >
-                {family.map((m) => (
-                  <Command.Item
-                    key={m.id}
-                    value={`person ${m.name} ${m.relationship}`}
-                    onSelect={() => selectPerson(m.id)}
-                    className="flex items-center gap-3 rounded-md px-3 py-2 text-sm aria-selected:bg-[color:var(--color-subtle)]"
-                  >
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-subtle)] text-[10px] text-[color:var(--color-muted)]">
-                      {initials(m.name)}
-                    </span>
-                    <span className="flex-1 truncate">{m.name}</span>
-                    {m.relationship ? (
-                      <span className="text-xs text-[color:var(--color-muted)]">
-                        {m.relationship}
+                {family.map((m) => {
+                  const label = relationshipLabel(m.relationship);
+                  return (
+                    <Command.Item
+                      key={m.id}
+                      value={`person ${m.name} ${label}`}
+                      onSelect={() => selectPerson(m.id)}
+                      className="flex items-center gap-3 rounded-md px-3 py-2 text-sm aria-selected:bg-[color:var(--color-subtle)]"
+                    >
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-subtle)] text-[10px] text-[color:var(--color-muted)]">
+                        {initials(m.name)}
                       </span>
-                    ) : null}
-                  </Command.Item>
-                ))}
+                      <span className="flex-1 truncate">{m.name}</span>
+                      {m.relationship && m.relationship !== "other" ? (
+                        <span className="text-xs text-[color:var(--color-muted)]">
+                          {label}
+                        </span>
+                      ) : null}
+                    </Command.Item>
+                  );
+                })}
               </Command.Group>
             ) : null}
 

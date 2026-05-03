@@ -1,15 +1,22 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/db";
 import { updatePatient } from "@/db/patients";
 import { createSession } from "@/db/sessions";
 import { debounce } from "@/lib/debounce";
 import { useUI } from "@/store/ui";
+import { cn } from "@/lib/utils";
+import { GenderToggle } from "./GenderToggle";
+import { Genogram } from "./Genogram";
+import type { Gender } from "@/lib/relationships";
+
+type Tab = "bio" | "genogram";
 
 export function BioPage() {
   const activePatientId = useUI((s) => s.activePatientId);
   const setActiveSession = useUI((s) => s.setActiveSession);
   const setView = useUI((s) => s.setView);
+  const [tab, setTab] = useState<Tab>("bio");
 
   const patient = useLiveQuery(
     () =>
@@ -70,7 +77,17 @@ export function BioPage() {
   return (
     <div className="flex h-full flex-col">
       <header className="flex items-center justify-between border-b border-[color:var(--color-border)] px-6 py-3">
-        <span className="text-sm">Patient bio</span>
+        <div className="flex items-center gap-1">
+          <TabButton active={tab === "bio"} onClick={() => setTab("bio")}>
+            Bio
+          </TabButton>
+          <TabButton
+            active={tab === "genogram"}
+            onClick={() => setTab("genogram")}
+          >
+            Genogram
+          </TabButton>
+        </div>
         {sessionCount > 0 ? (
           <button
             type="button"
@@ -82,6 +99,11 @@ export function BioPage() {
         ) : null}
       </header>
 
+      {tab === "genogram" ? (
+        <div className="flex-1">
+          <Genogram />
+        </div>
+      ) : (
       <div className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-[640px] px-8 py-10">
           <Field label="Name">
@@ -109,6 +131,13 @@ export function BioPage() {
                 persist({ age: Number.isFinite(n) ? n : undefined });
               }}
               className="w-24 rounded border border-[color:var(--color-border)] bg-transparent px-2 py-1.5 text-sm outline-none focus:border-[color:var(--color-accent)]"
+            />
+          </Field>
+
+          <Field label="Gender">
+            <GenderToggle
+              value={patient.gender}
+              onChange={(g: Gender | undefined) => persist({ gender: g })}
             />
           </Field>
 
@@ -154,7 +183,34 @@ export function BioPage() {
           </div>
         </div>
       </div>
+      )}
     </div>
+  );
+}
+
+function TabButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "rounded-md px-3 py-1 text-sm transition-colors",
+        active
+          ? "bg-[color:var(--color-subtle)] text-[color:var(--color-fg)]"
+          : "text-[color:var(--color-muted)] hover:bg-[color:var(--color-subtle)]",
+      )}
+      aria-pressed={active}
+    >
+      {children}
+    </button>
   );
 }
 

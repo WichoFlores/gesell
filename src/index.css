@@ -1,6 +1,24 @@
 @import "tailwindcss";
 @import "./editor/styles.css";
 
+/* React Flow theming — its bundled CSS expects light-on-light, so override
+   colors and SVG fill to follow the app's CSS variables. */
+.react-flow__controls-button {
+  background: var(--color-bg) !important;
+  border-bottom-color: var(--color-border) !important;
+}
+.react-flow__controls-button:hover {
+  background: var(--color-subtle) !important;
+}
+.react-flow__controls-button svg {
+  fill: var(--color-fg) !important;
+  max-height: 14px;
+  max-width: 14px;
+}
+.react-flow__node {
+  font-family: inherit;
+}
+
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 @theme {
