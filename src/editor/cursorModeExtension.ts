@@ -19,24 +19,84 @@ export function buildCursorModeExtension(options: Options) {
 
     addProseMirrorPlugins() {
       let viewRef: EditorView | null = null;
+      // view.composing flips to false at the very start of compositionend,
+      // BEFORE the synthesized commit transaction is dispatched. Dispatching
+      // a storedMarks transaction in that window splits dead-key sequences
+      // like `´` + `a` -> `'a` instead of `á`. The cooldown holds the guard
+      // open for a few frames after composition ends.
+      let lastCompositionEnd = 0;
+      const COMPOSITION_COOLDOWN_MS = 120;
+
+      // Cursor-mode marks are `inclusive: false`, so the model cursor at the
+      // end of a marked range sits OUTSIDE it. Normal typing uses
+      // storedMarks to still apply the mark, but IME composition bypasses
+      // storedMarks — the browser inserts composed text via DOM mutations
+      // that PM reads back into a fresh, unmarked text node. We snapshot the
+      // cursor + active mode on compositionstart and reapply the mark to the
+      // committed range after compositionend.
+      let compositionStartPos: number | null = null;
+      let compositionStartMode: string | null = null;
+
+      const onCompositionStart = () => {
+        if (!viewRef) return;
+        const modeId = options.getMode();
+        if (!modeId) return;
+        compositionStartPos = viewRef.state.selection.from;
+        compositionStartMode = modeId;
+      };
+
+      const onCompositionEnd = () => {
+        lastCompositionEnd = Date.now();
+        const startPos = compositionStartPos;
+        const modeId = compositionStartMode;
+        compositionStartPos = null;
+        compositionStartMode = null;
+        if (startPos == null || modeId == null || !viewRef) return;
+
+        // PM commits the composition in a queued task after compositionend.
+        // Defer to the next tick so we see the post-commit selection.
+        const view = viewRef;
+        setTimeout(() => {
+          if (!view.editable) return;
+          const markType = view.state.schema.marks[modeId];
+          if (!markType) return;
+          const endPos = view.state.selection.from;
+          if (endPos <= startPos) return;
+          const tr = view.state.tr
+            .addMark(startPos, endPos, markType.create())
+            .setStoredMarks([markType.create()]);
+          view.dispatch(tr);
+        }, 0);
+      };
+
       return [
         new Plugin({
           key: cursorModePluginKey,
 
           view(view) {
             viewRef = view;
+            view.dom.addEventListener("compositionstart", onCompositionStart);
+            view.dom.addEventListener("compositionend", onCompositionEnd);
             return {
               destroy() {
+                view.dom.removeEventListener(
+                  "compositionstart",
+                  onCompositionStart,
+                );
+                view.dom.removeEventListener(
+                  "compositionend",
+                  onCompositionEnd,
+                );
                 viewRef = null;
               },
             };
           },
 
           appendTransaction(_transactions, _oldState, newState) {
-            // Don't re-assert storedMarks mid-IME composition: dispatching
-            // while view.composing tears down the pending composition and
-            // splits dead-key sequences (e.g. `´` + `a` -> `á`).
             if (viewRef?.composing) return null;
+            if (Date.now() - lastCompositionEnd < COMPOSITION_COOLDOWN_MS) {
+              return null;
+            }
 
             const modeId = options.getMode();
             if (!modeId) return null;

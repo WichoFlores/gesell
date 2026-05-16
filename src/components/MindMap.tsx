@@ -20,6 +20,10 @@ import { SnippetNode } from "./mindmap/SnippetNode";
 import { ClusterPivot } from "./mindmap/ClusterPivot";
 import { buildMindMap } from "./mindmap/layout";
 import { preSettleLayout, useForceLayout } from "./mindmap/useForceLayout";
+import {
+  SessionFilter,
+  type SessionSelection,
+} from "./mindmap/SessionFilter";
 
 const NODE_TYPES = {
   "mindmap-patient": PatientNode,
@@ -54,14 +58,27 @@ function MindMapInner() {
     [],
   );
 
+  // "all" is the default sentinel; toggling materializes to an explicit Set.
+  // Reset to "all" when switching patient so we don't carry stale ids.
+  const [selection, setSelection] = useState<SessionSelection>("all");
+  useEffect(() => {
+    setSelection("all");
+  }, [activePatientId]);
+
+  const filteredSessions = useMemo(() => {
+    const all = sessions ?? [];
+    if (selection === "all") return all;
+    return all.filter((s) => selection.has(s.id));
+  }, [sessions, selection]);
+
   const initial = useMemo(() => {
     if (!patient) return { nodes: [] as Node[], edges: [] as Edge[] };
-    const built = buildMindMap(patient, sessions ?? [], markDefs);
+    const built = buildMindMap(patient, filteredSessions, markDefs);
     // Pre-settle the layout silently so the very first React Flow paint
     // shows the calm balanced layout — no visible "snap" from the radial
     // initial positions to the simulated equilibrium.
     return { ...built, nodes: preSettleLayout(built.nodes, built.edges) };
-  }, [patient, sessions, markDefs]);
+  }, [patient, filteredSessions, markDefs]);
 
   // Controlled nodes/edges so the force simulation can mutate positions on
   // each tick via React Flow's setNodes (called inside useForceLayout).
@@ -83,7 +100,11 @@ function MindMapInner() {
     );
   }
 
-  if (!hasContent) {
+  const sessionList = sessions ?? [];
+  // Empty state only fires when the patient genuinely has no sessions at all.
+  // If sessions exist but the filter excludes them, we still want to render
+  // the filter bar so the user can toggle them back on.
+  if (sessionList.length === 0) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-2 text-center text-sm text-[color:var(--color-muted)]">
         <span>Nothing to map yet.</span>
@@ -95,17 +116,35 @@ function MindMapInner() {
     );
   }
 
-  return <MindMapCanvas nodes={nodes} edges={edges} setNodes={setNodes} />;
+  return (
+    <MindMapCanvas
+      nodes={nodes}
+      edges={edges}
+      setNodes={setNodes}
+      hasContent={hasContent}
+      sessions={sessionList}
+      selection={selection}
+      onSelectionChange={setSelection}
+    />
+  );
 }
 
 function MindMapCanvas({
   nodes,
   edges,
   setNodes,
+  hasContent,
+  sessions,
+  selection,
+  onSelectionChange,
 }: {
   nodes: Node[];
   edges: Edge[];
   setNodes: React.Dispatch<React.SetStateAction<Node[]>>;
+  hasContent: boolean;
+  sessions: import("@/db/schema").Session[];
+  selection: SessionSelection;
+  onSelectionChange: (next: SessionSelection) => void;
 }) {
   const { onNodeDragStart, onNodeDrag, onNodeDragStop } = useForceLayout(
     nodes,
@@ -122,6 +161,18 @@ function MindMapCanvas({
 
   return (
     <div className="mindmap-canvas h-full w-full">
+      <SessionFilter
+        sessions={sessions}
+        value={selection}
+        onChange={onSelectionChange}
+      />
+      {!hasContent ? (
+        <div className="absolute inset-0 z-10 flex items-center justify-center text-sm text-[color:var(--color-muted)]">
+          {selection !== "all" && selection.size === 0
+            ? "No sessions selected."
+            : "No marked text in the selected sessions yet."}
+        </div>
+      ) : null}
       <ReactFlow
         nodes={nodes}
         edges={edges}
