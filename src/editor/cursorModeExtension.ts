@@ -1,5 +1,6 @@
 import { Extension, type Editor } from "@tiptap/core";
 import { Plugin, PluginKey, TextSelection } from "@tiptap/pm/state";
+import type { EditorView } from "@tiptap/pm/view";
 
 type Options = {
   getMode: () => string | null;
@@ -17,11 +18,26 @@ export function buildCursorModeExtension(options: Options) {
     name: "cursorMode",
 
     addProseMirrorPlugins() {
+      let viewRef: EditorView | null = null;
       return [
         new Plugin({
           key: cursorModePluginKey,
 
+          view(view) {
+            viewRef = view;
+            return {
+              destroy() {
+                viewRef = null;
+              },
+            };
+          },
+
           appendTransaction(_transactions, _oldState, newState) {
+            // Don't re-assert storedMarks mid-IME composition: dispatching
+            // while view.composing tears down the pending composition and
+            // splits dead-key sequences (e.g. `´` + `a` -> `á`).
+            if (viewRef?.composing) return null;
+
             const modeId = options.getMode();
             if (!modeId) return null;
             const markType = newState.schema.marks[modeId];

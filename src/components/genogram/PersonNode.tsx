@@ -21,6 +21,9 @@ export function PersonNode({ data }: NodeProps & { data: PersonNodeData }) {
         className={HIDDEN_HANDLE}
         style={{ top: 0, left: "50%" }}
       />
+      {/* Left + right handles serve both directions: a person can be on
+          either side of a couple line, so each side exposes a stacked
+          source+target pair (both at the shape's vertical center). */}
       <Handle
         type="source"
         position={Position.Left}
@@ -29,7 +32,21 @@ export function PersonNode({ data }: NodeProps & { data: PersonNodeData }) {
         style={{ top: SHAPE_CENTER, left: `calc(50% - ${SHAPE_SIZE / 2}px)` }}
       />
       <Handle
+        type="target"
+        position={Position.Left}
+        id="left"
+        className={HIDDEN_HANDLE}
+        style={{ top: SHAPE_CENTER, left: `calc(50% - ${SHAPE_SIZE / 2}px)` }}
+      />
+      <Handle
         type="source"
+        position={Position.Right}
+        id="right"
+        className={HIDDEN_HANDLE}
+        style={{ top: SHAPE_CENTER, left: `calc(50% + ${SHAPE_SIZE / 2}px)` }}
+      />
+      <Handle
+        type="target"
         position={Position.Right}
         id="right"
         className={HIDDEN_HANDLE}

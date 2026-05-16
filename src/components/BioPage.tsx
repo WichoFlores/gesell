@@ -8,9 +8,10 @@ import { useUI } from "@/store/ui";
 import { cn } from "@/lib/utils";
 import { GenderToggle } from "./GenderToggle";
 import { Genogram } from "./Genogram";
+import { MindMap } from "./MindMap";
 import type { Gender } from "@/lib/relationships";
 
-type Tab = "bio" | "genogram";
+type Tab = "bio" | "genogram" | "mindmap";
 
 export function BioPage() {
   const activePatientId = useUI((s) => s.activePatientId);
@@ -87,6 +88,12 @@ export function BioPage() {
           >
             Genogram
           </TabButton>
+          <TabButton
+            active={tab === "mindmap"}
+            onClick={() => setTab("mindmap")}
+          >
+            Mind map
+          </TabButton>
         </div>
         {sessionCount > 0 ? (
           <button
@@ -102,6 +109,10 @@ export function BioPage() {
       {tab === "genogram" ? (
         <div className="flex-1">
           <Genogram />
+        </div>
+      ) : tab === "mindmap" ? (
+        <div className="flex-1">
+          <MindMap />
         </div>
       ) : (
       <div className="flex-1 overflow-y-auto">

@@ -57,7 +57,6 @@ const fadedStyle = {
   stroke: "var(--color-border)",
   strokeWidth: 1,
   opacity: 0.5,
-  strokeDasharray: "4 4",
 };
 
 export function buildGenogram(
@@ -138,13 +137,17 @@ export function buildGenogram(
       style: fadedStyle,
     });
   }
-  function pushCoupleHalf(personId: string, side: "left" | "right", anchorId: string) {
+  // Direct couple line — drawn as a single edge p1 → p2 so the line stays
+  // unbroken across the descent anchor that sits at its midpoint. With a
+  // split (p1→anchor, anchor→p2) the path bends at the anchor's handles and
+  // leaves a tiny gap exactly where the children line drops down.
+  function pushCoupleLine(leftId: string, rightId: string) {
     edges.push({
-      id: `${personId}=${anchorId}-${side}`,
-      source: personId,
-      sourceHandle: side,
-      target: anchorId,
-      targetHandle: side === "right" ? "left" : "right",
+      id: `couple-line-${leftId}-${rightId}`,
+      source: leftId,
+      sourceHandle: "right",
+      target: rightId,
+      targetHandle: "left",
       type: "straight",
       style: coupleStyle,
     });
@@ -201,8 +204,7 @@ export function buildGenogram(
     const ppAnchorY = shapeCenterY(0);
     const ppAnchorId = `couple:${patient.id}:${partnerId}`;
     anchors.push({ id: ppAnchorId, x: ppAnchorX, y: ppAnchorY });
-    pushCoupleHalf(patient.id, "right", ppAnchorId);
-    pushCoupleHalf(partnerId, "left", ppAnchorId);
+    pushCoupleLine(patient.id, partnerId);
     descentSourceId = ppAnchorId;
     descentSourceHandle = "bottom";
     descentSourceX = ppAnchorX;
@@ -291,8 +293,7 @@ export function buildGenogram(
     placeCenter(p2.id, p2Cx, parentY);
     const anchorId = `couple:${p1.id}:${p2.id}`;
     anchors.push({ id: anchorId, x: childGroupCx, y: shapeCenterY(1) });
-    pushCoupleHalf(p1.id, "right", anchorId);
-    pushCoupleHalf(p2.id, "left", anchorId);
+    pushCoupleLine(p1.id, p2.id);
     parentDescentSourceId = anchorId;
     parentDescentSourceHandle = "bottom";
     // Extra parents (3+): place to the right of the couple, no anchor
@@ -340,8 +341,7 @@ export function buildGenogram(
       placeCenter(g2.id, g2Cx, gpY);
       const gpAnchorId = `couple:${g1.id}:${g2.id}`;
       anchors.push({ id: gpAnchorId, x: gpCenterX, y: shapeCenterY(2) });
-      pushCoupleHalf(g1.id, "right", gpAnchorId);
-      pushCoupleHalf(g2.id, "left", gpAnchorId);
+      pushCoupleLine(g1.id, g2.id);
       // Descend to first parent (we don't track maternal vs paternal yet)
       pushDescent(gpAnchorId, "bottom", parents[0].id);
       // Extras: faded line to first parent
